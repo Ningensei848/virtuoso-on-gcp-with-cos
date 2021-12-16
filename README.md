@@ -13,7 +13,7 @@
 
 ## Overview
 
-0. [各種必要な設定]()を整える
+0. [各種必要な設定](https://github.com/Ningensei848/virtuoso-on-gcp-with-cos#0-configuration)を整える
 1. ローカル環境に virtuoso コンテナを建て，必要な RDF データをロードする
 2. 得られた `virtuoso.db` を `gsutil` コマンドで GCS にアップロードする
 3. `gcloud` コマンドでインスタンスを起動
@@ -30,6 +30,10 @@
 `.env.example` を参考に，自身の環境に書き換える
 
 shell でそのファイルを読み込み，環境変数としてアクセスできるようにする
+
+```shell
+source .env
+```
 
 #### setup on GCP
 
@@ -55,7 +59,7 @@ gcloud init
 
 #### 静的 IP アドレスの確保
 
-GCE_STATIC_IP_ADDRESS
+cf. https://cloud.google.com/compute/docs/ip-addresses/reserve-static-external-ip-address
 
 #### ドメインの確保
 
@@ -86,34 +90,23 @@ nohup docker exec -i virtuoso_container isql $PORT_VIRTUOSO_ISQL \
 
 （時間がかかる処理によく使われる）
 
-## 2. Upload `virtuoso.db` to GCS by `gsutil`
+### 2. Upload `virtuoso.db` to GCS by `gsutil`
 
 `<bucket_name>` でバケットの名前を指定して，`gsutil mb` コマンドで作成する
 この際に，`-p` オプションでプロジェクトと紐付けできる
 
 ```shell
-gsutil mb -p $GCE_PROJECT_NAME gs://<bucket_name>
-gsutil cp .virtuoso/virtuoso.db gs://<bucket_name>
+gsutil mb -p $GCE_PROJECT_NAME gs://$GCS_BUCKET_NAME
+gsutil cp ./.virtuoso/virtuoso.db gs://$GCS_BUCKET_NAME
 ```
 
-## 3. Create instance by `gcloud`
+### 3. Create instance by `gcloud`
 
 ```shell
-gcloud compute instances create $GCE_INSTANCE_NAME \
- --project $GCE_PROJECT_NAME \
- --zone $GCE_ZONE \
- --machine-type $GCE_MACHINE_TYPE \
- --tags $GCE_TAGS \
- --create-disk $GCE_CREATE_DISK \
- --metadata-from-file NGINX_CONFIG=$PWD/nginx/default.conf.template,DOTENV=$PWD/.env,COMPOSE_FILE=$PWD/docker-compose.yml,startup-script=$PWD/gcp/startup.sh \
- --metadata google-logging-enabled=true,cos-metrics-enabled=true,USERNAME=$USERNAME \
- --address $GCE_STATIC_IP_ADDRESS \
- --shielded-secure-boot \
- --shielded-vtpm \
- --shielded-integrity-monitoring
+gcloud compute instances create $GCE_CREATE_ARGS
 ```
 
-## 4. complete !
+### 4. complete !
 
 confirm your page
 

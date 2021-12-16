@@ -138,7 +138,7 @@ docker-compose () {
 }
 
 gsutil () {
-  docker run --rm -it \
+  docker run --rm -i \
     -v "$(pwd):$(pwd)" \
     -v "$USERHOME:$USERHOME" \
     -v /etc/passwd:/etc/passwd:ro \
@@ -152,7 +152,11 @@ gsutil () {
 # 証明書がなければ，CERTBOT で証明書を取得する
 # nginx なしで 80 ポートを開けて certbot 自身が通信する {{{
 if [ ! -d $CERTBOT_VOLUME_PATH/live ]; then
-  docker-compose run --rm --publish 80:80 certbot certonly \
+  /usr/bin/docker run --rm -i --publish 80:80 \
+    -v $USERHOME/nginx/ssl-proof:/var/www/html/ssl-proof \
+    -v $USERHOME/nginx/letsencrypt:/etc/letsencrypt \
+    -v $USERHOME/nginx/certbotlog:/var/log/letsencrypt \
+    certbot/certbot:$CERTBOT_IMAGE_TAG certonly \
     --standalone \
     --non-interactive \
     --agree-tos \
@@ -165,7 +169,6 @@ if [ ! -d $CERTBOT_VOLUME_PATH/live ]; then
 fi
 # }}}
 
-）
 # GCS からデータを同期する {{{
 gsutil -m rsync -r gs://$GCS_VIRTUOSO_DB_PATH $USERHOME/.virtuoso/virtuoso.db
 LINE_NOTIFY 'compose command runnning ...'
