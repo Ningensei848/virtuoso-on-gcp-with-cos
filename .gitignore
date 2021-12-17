@@ -510,10 +510,8 @@ $RECYCLE.BIN/
 id_rsa*
 
 *.ipynb
-*.ttl
 .env
 .virtuoso/
-data/turtle
 intermediate_*
 nohup.out
 ssl-proof/
