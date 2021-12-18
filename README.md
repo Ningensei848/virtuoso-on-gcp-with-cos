@@ -70,7 +70,7 @@ freenom など
 cf. http://docs.openlinksw.com/virtuoso/rdfperfloading/
 
 - `data/` 以下にロード対象の RDF データを置く
-- `initialLoader.sql` に必要な処理を書く
+- ~~`initialLoader.sql` に必要な処理を書く~~ : => `docker run --rm -v $(pwd)/data:/data -v $(pwd)/script:/script -u "$(id -u $USERNAME):$(id -g $USERNAME)" python:3.10-alpine python /script/configureSQL.py ttl --origin https://your-doma.in`
 
 - virtuoso コンテナを建てる
 - ローカルのフォルダがマウントされ，`.virtuoso` というフォルダが作成される

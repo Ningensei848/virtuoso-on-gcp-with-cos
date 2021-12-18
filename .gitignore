@@ -513,6 +513,7 @@ id_rsa*
 .env
 .virtuoso/
 intermediate_*
+initialLoader.sql
 nohup.out
 ssl-proof/
 letsencrypt/
