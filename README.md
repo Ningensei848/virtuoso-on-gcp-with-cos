@@ -13,34 +13,29 @@
 
 ## Overview
 
-0. [各種必要な設定](https://github.com/Ningensei848/virtuoso-on-gcp-with-cos#0-configuration)を整える
-1. ローカル環境に virtuoso コンテナを建て，必要な RDF データをロードする
-2. 得られた `virtuoso.db` を `gsutil` コマンドで GCS にアップロードする
-3. `gcloud` コマンドでインスタンスを起動
-4. 完成！
-
-一番時間がかかるのは「必要な RDF データをロード」するところ（ローカル計算機のパフォーマンス依存なので）
+0. Prepare your [configurations](https://github.com/Ningensei848/virtuoso-on-gcp-with-cos#0-configuration)
+1. Run `virtuoso` container on your local and Load your rdf data
+2. Upload `virtuoso.db` to GCS via `gsutil` command
+3. Create and Auto-Start your instance via `gcloud` command
+4. Congratulations 🎉🎉🥳🎉🎉🥳🎉
 
 ## Usage
 
 ### 0. Configuration
 
-#### edit & load `.env` file
+- Setup on GCP
+- Install `gcloud` and `gsutil` command
+- Reserve static external IP address
+- Get your domain
+- Edit `.env` file
 
-`.env.example` を参考に，自身の環境に書き換える
+#### Setup on GCP
 
-shell でそのファイルを読み込み，環境変数としてアクセスできるようにする
+- [Create account](https://console.cloud.google.com/freetrial)
+- [Create project](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
 
-```shell
-source .env
-```
-
-#### setup on GCP
-
-- アカウント登録
-- プロジェクトを作成
-
-#### install `gcloud` and `gsutil` command
+<details>
+<summary>how to install `gcloud` and `gsutil` command</summary>
 
 Other distributions [here](https://cloud.google.com/sdk/docs/install#installation_instructions):
 
@@ -57,46 +52,63 @@ sudo apt-get update && sudo apt-get install google-cloud-sdk
 gcloud init
 ```
 
-#### 静的 IP アドレスの確保
+</details>
+
+#### Reserve static external IP address
 
 cf. https://cloud.google.com/compute/docs/ip-addresses/reserve-static-external-ip-address
 
-#### ドメインの確保
+#### Get your domain
 
-freenom など
+cf. [Search results in google](https://www.google.com/search?q=gcp+how+to+get+domain)
+
+#### Edit `.env` file
+
+Referring to `.env.example`, rewrite your `.env`
+
+<details>
+<summary>more info ...</summary>
+
+Mandatory:
+
+- `USERNAME`: your username
+- `USER_EMAIL`: your email (for letsencrypt)
+- `SERVER_NAME`: your domain (e.g. your-doma.in)
+- `GCP_PROJECT_NAME`: your project name
+- `GCE_*`: instance preferences your want to create
+- `GCS_BUCKET_NAME`: your bucket name
+
+Optional:
+
+- `Parameters_NumberOfBuffers` & `Parameters_MaxDirtyBuffers`: virtuoso performance tuning
+- `TOKEN_LINE`: enable notifycation cf. https://notify-bot.line.me
+
+</details>
 
 ### 1. load RDF data
 
-cf. http://docs.openlinksw.com/virtuoso/rdfperfloading/
+virtuoso official documentation: http://docs.openlinksw.com/virtuoso/rdfperfloading/
 
-- `data/` 以下にロード対象の RDF データを置く
-- ~~`initialLoader.sql` に必要な処理を書く~~ : => `docker run --rm -v $(pwd)/data:/data -v $(pwd)/script:/script -u "$(id -u $USERNAME):$(id -g $USERNAME)" python:3.10-alpine python /script/configureSQL.py ttl --origin https://your-doma.in`
+1. Put the RDF data under `data/`
+2. Config from `.env`: `source .env`
+3. Run script: `docker run --rm -v $(pwd)/data:/data -v $(pwd)/script:/script -u "$(id -u $USERNAME):$(id -g $USERNAME)" python:3.10-alpine python /script/configureSQL.py ttl --origin https://$SERVER_NAME`
+4. Start virtuoso container: `docker-compose up -d virtuoso`
 
-- virtuoso コンテナを建てる
-- ローカルのフォルダがマウントされ，`.virtuoso` というフォルダが作成される
-  - `data/` もマウントされている
+- confirm your server online: `docker-compose logs`
+- > virtuoso_container | HH:MM:SS Server online at `$PORT_VIRTUOSO_ISQL` (pid 1)
 
-```shell
-docker-compose up -d  virtuoso
-```
+5. Load RDF data on virtuoso: `nohup docker exec -i virtuoso_container isql $PORT_VIRTUOSO_ISQL -U dba -P $PASSWORD_VIRTUOSO < ./script/initialLoader.sql &`
 
-起動中のコンテナに対して，ISQL 経由でデータをロードするように指示を出す
-
-```shell
-source .env
-nohup docker exec -i virtuoso_container isql $PORT_VIRTUOSO_ISQL \
-  -U dba -P $PASSWORD_VIRTUOSO < ./initialLoader.sql &
-```
-
-`nohup $@ &` とすることで，`$@` に相当するコマンドをバックグラウンドかつ独立して実行する
-→ ターミナルを閉じても実行される
-
-（時間がかかる処理によく使われる）
+- `nohup $@ &` runs commands (`$@`) in the background and independently.
+- To check the completion of the process, please refer to `nohup.out`.
 
 ### 2. Upload `virtuoso.db` to GCS by `gsutil`
 
-バケットの名前を指定して，`gsutil mb` コマンドで作成する
-この際に，`-p` オプションでプロジェクトと紐付けできる
+1. Create a named bucket with the command `gsutil mb gs://<bucketname>`
+
+- You can use the `-p` option to link it to your project
+
+2. Copy data from the local to the GCS: `gsutil cp src_url dst_url`
 
 ```shell
 source .env
@@ -104,11 +116,9 @@ gsutil mb -p $GCE_PROJECT_NAME gs://$GCS_BUCKET_NAME
 gsutil cp ./.virtuoso/virtuoso.db gs://$GCS_BUCKET_NAME
 ```
 
-Note: GCS 内での保存場所を変えたい場合，適宜 `.env` と `gcp/startup.sh` も編集が必要となる
-
 ### 3. Create instance by `gcloud`
 
-※ `.env` 内の virtuoso の `Parameters_NumberOfBuffers`, `Parameters_MaxDirtyBuffers` を GCE のスペックに合わせた数値に変更すること
+For variable `GCE_CREATE_ARGS`, check the description in `.env.example` carefully and read the GCP documentation _much carefully_ before executing commands below.
 
 ```shell
 source .env
@@ -118,7 +128,7 @@ gcloud compute instances create $GCE_CREATE_ARGS
 <details>
 <summary>Learn more</summary>
 
-`gcloud` でインスタンスを作成する際に，以下の引数を与えている
+When we create an instance with `gcloud`, the following arguments are given:
 
 ```shell
 GCE_CREATE_ARGS="$GCE_INSTANCE_NAME \
@@ -135,12 +145,12 @@ GCE_CREATE_ARGS="$GCE_INSTANCE_NAME \
  --shielded-integrity-monitoring"
 ```
 
-`metadata-from-file` と `metadata` によって，各種ファイルを GCP に送っている
+In this case, `metadata-from-file` and `metadata` are used to send various files to GCP.
 
-- `cloud-config.yml`: インスタンスが作られる際に一度だけ読み込まれる
-- `startup.sh`: （停止状態から）起動するたびに読み込まれる
-  - `.env`, `default.conf.template`, `docker-compose.yml` はここでメタデータサーバから読み込まれ，ファイルとして保存される
-  - `gsutil` によるデータの同期と `docker-compose` によるコンテナ立ち上げも行なう
+- `cloud-config.yml`: Read only once when the instance is created
+- `startup.sh`: Loaded every time in start up (from a stopped)
+  - `.env`, `default.conf.template`, `docker-compose.yml` are read from the metadata server and saved as a file
+  - Also synchronize data with `gsutil` and launch containers with `docker-compose`.
 
 </details>
 
@@ -148,9 +158,11 @@ GCE_CREATE_ARGS="$GCE_INSTANCE_NAME \
 
 Congratulations !!
 
-## future work
+Open the GCP project page and check that the instance has been successfully launched.
 
-GitHub Actions との連携：例えば，リポジトリ内の `data/` 以下に変更があったら，それをトリガーに virtuoso コンテナの起動 → データのロード →GCS との同期もできるはず
+## Future work
+
+- with GitHub Actions: for example, if there is a change under `data/` in the repository, it should trigger the virtuoso container to start → load the data → sync with GCS
 
 ## LICENSE
 
