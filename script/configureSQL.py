@@ -38,8 +38,8 @@ EXT = re.sub("^\W+", "", ARGS.extension)
 PROTOCOL = "http" if not ARGS.protocol else ARGS.protocol
 FQDN = "graph.example.com" if not ARGS.fqdn else ARGS.fqdn
 MOUNT_FOLDER = "/mount/data" if "mount-folder" not in ARGS else ARGS["mount-folder"]
-
 IsGraphSpecified = False if "target-graph" not in ARGS else ARGS["target-graph"]
+LOADING_FUNCTION = "TTLP_MT" if EXT == "ttl" else "RDF_LOAD_RDFXML"
 
 
 def makeGraph(dir, name):
@@ -58,6 +58,21 @@ TTL_LOADER = CWD / "script" / "initialLoader.sql"
 
 # 行末のセミコロンを忘れずに！
 content = """
+create procedure DB.DBA.MSG_OUTOUT (in x varchar)
+{
+  declare str_out any;
+  declare str varchar;
+
+-- Pass correct result metadata to client
+  result_names (str);
+
+-- Get a new string output stream
+  str_out := string_output();
+
+  http (x, str_out);
+  result (str_out);
+};
+
 log_enable(2,1);\n
 """
 
@@ -78,7 +93,7 @@ for filepath in DIR_DATA.glob(f"**/*.{EXT}"):
     # TTLのロード(DB.DBA.TTLP_MT) | SPARQLthon19/TripleLoad | TogoWiki
     # cf. https://wiki.lifesciencedb.jp/mw/SPARQLthon19/TripleLoad#TTL.E3.81.AE.E3.83.AD.E3.83.BC.E3.83.89.28DB.DBA.TTLP_MT.29
     sql = (
-        f"DB.DBA.TTLP_MT (file_to_string_output('{MOUNT_FOLDER}/{relativeParent}/{filepath.name}'), "
+        f"DB.DBA.{LOADING_FUNCTION} (file_to_string_output('{MOUNT_FOLDER}/{relativeParent}/{filepath.name}'), "
         + "'', "
         + f"'{graph}', "
         + "81 ) ;"
@@ -92,3 +107,4 @@ for filepath in DIR_DATA.glob(f"**/*.{EXT}"):
 # 'initialLoader.sql' にファイルごとに必要なSQL文を書き込む
 with TTL_LOADER.open(encoding="utf-8", mode="w") as f:
     f.write(content)
+    f.write("MSG_OUTOUT ( '######### initialLoader.sql completed ! '#########' );\n")

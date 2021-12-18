@@ -30,7 +30,7 @@ services:
     image: openlink/virtuoso-opensource-7:${VIRTUOSO_IMAGE_TAG}
     container_name: virtuoso_container
     volumes:
-      - ${PWD}/data:/mount/data:ro
+      - ${PWD}/data:${MOUNT_DIR}:ro
       - ${PWD}/.virtuoso:/database
     environment:
       DBA_PASSWORD: ${PASSWORD_VIRTUOSO}

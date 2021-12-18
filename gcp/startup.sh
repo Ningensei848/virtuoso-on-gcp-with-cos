@@ -21,11 +21,13 @@ source $USERHOME/.env
 
 # .env に格納したトークンを読み出す
 LINE_NOTIFY () {
-  MSG="[GCE] $1"
-  curl -X POST \
-    -H "Authorization: Bearer $TOKEN_LINE" \
-    -F "message=${MSG}" \
-    https://notify-api.line.me/api/notify
+  if [ -n "$TOKEN_LINE" ]; then
+    MSG="[GCE] $1"
+    curl -X POST \
+      -H "Authorization: Bearer $TOKEN_LINE" \
+      -F "message=${MSG}" \
+      https://notify-api.line.me/api/notify
+  fi
 }
 
 # クォートありEOFなので，変数は展開されない
