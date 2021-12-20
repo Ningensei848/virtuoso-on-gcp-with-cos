@@ -172,7 +172,7 @@ fi
 # }}}
 
 # GCS からデータを同期する {{{
-gsutil -m rsync -r gs://$GCS_VIRTUOSO_DB_PATH $USERHOME/.virtuoso/virtuoso.db
+gsutil -m cp gs://$GCS_VIRTUOSO_DB_PATH $USERHOME/.virtuoso/virtuoso.db
 LINE_NOTIFY 'compose command runnning ...'
 # }}}
 
