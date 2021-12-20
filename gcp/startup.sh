@@ -119,15 +119,15 @@ chown -R $USERNAME:$USERNAME $USERHOME
 # 問題：なぜか run 時に一緒に pull すると, unexpected EOF になってコケる
 # 対策：一つ前に独立して pull しておく {{{
 # cloud-sdk
-/usr/bin/docker pull gcr.io/google.com/cloudsdktool/cloud-sdk:$GCE_SDK_TAG &>> $GCE_STARTUP_LOG
+/usr/bin/docker pull gcr.io/google.com/cloudsdktool/cloud-sdk:$GCE_SDK_TAG &>> $GCE_PULL_IMAGE_LOG
 # docker-compose
-/usr/bin/docker pull docker/compose:$GCE_COMPOSE_TAG &>> $GCE_STARTUP_LOG
+/usr/bin/docker pull docker/compose:$GCE_COMPOSE_TAG &>> $GCE_PULL_IMAGE_LOG
 # nginx
-/usr/bin/docker pull nginx:$NGINX_IMAGE_TAG &>> $GCE_STARTUP_LOG
+/usr/bin/docker pull nginx:$NGINX_IMAGE_TAG &>> $GCE_PULL_IMAGE_LOG
 # openlink/virtuoso-opensource-7
-/usr/bin/docker pull openlink/virtuoso-opensource-7:$VIRTUOSO_IMAGE_TAG &>> $GCE_STARTUP_LOG
+/usr/bin/docker pull openlink/virtuoso-opensource-7:$VIRTUOSO_IMAGE_TAG &>> $GCE_PULL_IMAGE_LOG
 # certbot/certbot
-/usr/bin/docker pull certbot/certbot:$CERTBOT_IMAGE_TAG &>> $GCE_STARTUP_LOG
+/usr/bin/docker pull certbot/certbot:$CERTBOT_IMAGE_TAG &>> $GCE_PULL_IMAGE_LOG
 # }}}
 
 # 関数定義
