@@ -107,4 +107,4 @@ for filepath in DIR_DATA.glob(f"**/*.{EXT}"):
 # 'initialLoader.sql' にファイルごとに必要なSQL文を書き込む
 with TTL_LOADER.open(encoding="utf-8", mode="w") as f:
     f.write(content)
-    f.write("MSG_OUTOUT ( '######### initialLoader.sql completed ! '#########' );\n")
+    f.write("MSG_OUTOUT ( '######### initialLoader.sql completed ! #########' );\n")
